@@ -118,19 +118,20 @@ int stm32flash_readLittlefs(const struct lfs_config *c, lfs_block_t block,
 				lfs_off_t off, void *buffer, lfs_size_t size)
 {
 	uint32_t addr2Read = 0;
+	uint8_t *lpt = buffer;
 	
-	if(block >= (W25Q128_NUM_GRAN/2)) //error
+	if(block >= (STM32Flash_NUM_GRAN/2)) //error
 	{
 		return LFS_ERR_IO;
 	}
 	
 	//获取读取的初始地址
-	addr2Read = STM32_FLASH_FLLESYS_START_BASE + block*W25Q128_ERASE_GRAN + off;
+	addr2Read = STM32_FLASH_FLLESYS_START_BASE + block*STM32Flash_ERASE_GRAN + off;
 	
 	//数据读取
 	for(int i =0;i < size;i++,addr2Read++)
 	{
-		buffer[i] = *(uint8_t*)addr2Read; 
+		lpt[i] = *(uint8_t*)addr2Read; 
 	}
 	
 	
@@ -153,14 +154,18 @@ int stm32flash_readLittlefs(const struct lfs_config *c, lfs_block_t block,
 int stm32flash_writeLittlefs(const struct lfs_config *c, lfs_block_t block,
 				lfs_off_t off,void *buffer, lfs_size_t size)
 {
+	uint32_t addr2Read = 0;
 	
-	if(block >= W25Q128_NUM_GRAN) //error
+	if(block >= STM32Flash_NUM_GRAN/2) //error
 	{
 		return LFS_ERR_IO;
 	}
 	
-	W25QXX_Write_NoCheck(buffer,block*W25Q128_ERASE_GRAN + off, size);
+	//写入的初始地址
+	addr2Read = STM32_FLASH_FLLESYS_START_BASE + block*STM32Flash_ERASE_GRAN + off;
 	
+	
+	STMFLASH_Write_NoCheck(addr2Read,buffer,size/2);
 	return LFS_ERR_OK;
 				
 }
@@ -175,14 +180,18 @@ int stm32flash_writeLittlefs(const struct lfs_config *c, lfs_block_t block,
  */
 int stm32flash_eraseLittlefs(const struct lfs_config *c, lfs_block_t block)
 {
+	uint32_t addr2Read = 0;
 	
-	if(block >= W25Q128_NUM_GRAN) //error
+	if(block >= STM32Flash_NUM_GRAN/2) //error
 	{
 		return LFS_ERR_IO;
 	}
 	
-	//擦除扇区
-	W25QXX_Erase_Sector(block);
+	//擦除的扇区地址
+	addr2Read = STM32_FLASH_FLLESYS_START_BASE + block*STM32Flash_ERASE_GRAN;
+	
+	FLASH_ErasePage(addr2Read);
+	
 	return  LFS_ERR_OK;
 
 }

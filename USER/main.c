@@ -7,17 +7,12 @@
 #include "w25qxx.h"
 #include "stdio.h"
 #include "lfs.h"
+#include "stmflash.h"
  
  
+/* lfs for W25Q128 *********************************************************/
 lfs_t lfs; 
 lfs_file_t file;
-
-
-
-
-uint8_t sendbuf[256] = "W25Q128 data write test for littlefs.littlefs is error\r\n";
-uint8_t readbuf[256] = {0};
-
 
 // configuration of the filesystem is provided by this struct
 const struct lfs_config cfg = {
@@ -36,6 +31,32 @@ const struct lfs_config cfg = {
     .lookahead_size = 512,
     .block_cycles = 500,
 };
+
+
+
+
+/* lfs for STM32Flash ********************************************************/
+lfs_t lfs_Stm32Flash; 
+lfs_file_t file_Stm32Flash;
+
+// configuration of the filesystem is provided by this struct
+const struct lfs_config cfg_Stm32Flash = {
+    // block device operations
+    .read  = stm32flash_readLittlefs,
+    .prog  = stm32flash_writeLittlefs,
+    .erase = stm32flash_eraseLittlefs,
+    .sync  = stm32flash_syncLittlefs,
+
+    // block device configuration
+    .read_size = 128,
+    .prog_size = 128,
+    .block_size = STM32Flash_ERASE_GRAN,
+    .block_count = STM32Flash_NUM_GRAN/2,
+    .cache_size = 512,
+    .lookahead_size = 512,
+    .block_cycles = 500,
+};
+
 
 
 int main(void)
@@ -65,13 +86,23 @@ int main(void)
 	}
 	printf("W25Q128 Ready!\r\n");  
 
-    err =  lfs_mount(&lfs, &cfg);
+//    err =  lfs_mount(&lfs, &cfg);
+//	
+//	if(err )
+//	{
+//		lfs_format(&lfs, &cfg);
+//        lfs_mount(&lfs, &cfg);
+//	}
+//	
 	
-	if(err )
+	err = lfs_mount(&lfs_Stm32Flash, &cfg_Stm32Flash);
+	
+	if( err )
 	{
-		lfs_format(&lfs, &cfg);
-        lfs_mount(&lfs, &cfg);
+		lfs_format(&lfs_Stm32Flash, &cfg_Stm32Flash);
+		lfs_mount(&lfs_Stm32Flash, &cfg_Stm32Flash);
 	}
+	
 	
 	
 	while(1)
@@ -80,17 +111,17 @@ int main(void)
 
 		
 		uint32_t boot_count = 0;
-		lfs_file_open(&lfs, &file, "boot_count", LFS_O_RDWR | LFS_O_CREAT);
-		lfs_file_read(&lfs, &file, &boot_count, sizeof(boot_count));
+		lfs_file_open(&lfs_Stm32Flash, &file_Stm32Flash, "boot_count", LFS_O_RDWR | LFS_O_CREAT);
+		lfs_file_read(&lfs_Stm32Flash, &file_Stm32Flash, &boot_count, sizeof(boot_count));
 
 		
 		// update boot count
 		boot_count += 1;
-		lfs_file_rewind(&lfs, &file);  // seek the file to begin
-		lfs_file_write(&lfs, &file, &boot_count, sizeof(boot_count));
+		lfs_file_rewind(&lfs_Stm32Flash, &file_Stm32Flash);  // seek the file to begin
+		lfs_file_write(&lfs_Stm32Flash, &file_Stm32Flash, &boot_count, sizeof(boot_count));
 
 		// remember the storage is not updated until the file is closed successfully
-		lfs_file_close(&lfs, &file);
+		lfs_file_close(&lfs_Stm32Flash, &file_Stm32Flash);
 
 //		// release any resources we were using
 //		lfs_unmount(&lfs);
