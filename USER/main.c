@@ -12,6 +12,9 @@
 lfs_t lfs; 
 lfs_file_t file;
 
+
+
+
 uint8_t sendbuf[256] = "W25Q128 data write test for littlefs.littlefs is error\r\n";
 uint8_t readbuf[256] = {0};
 
