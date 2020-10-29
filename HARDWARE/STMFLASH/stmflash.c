@@ -4,9 +4,9 @@
 //读取指定的一个字节
 //faddr:读地址(此地址必须为2的倍数!!)
 //返回值:对应数据.
-uint8_t STMFLASH_ReadHalfWord(u32 faddr)
+uint16_t STMFLASH_ReadHalfWord(u32 faddr)
 {
-	return *(uint8_t*)faddr; 
+	return *(uint16_t*)faddr; 
 }
 
 #if STM32_FLASH_WREN	//如果使能了写   
@@ -118,7 +118,7 @@ int stm32flash_readLittlefs(const struct lfs_config *c, lfs_block_t block,
 				lfs_off_t off, void *buffer, lfs_size_t size)
 {
 	uint32_t addr2Read = 0;
-	uint8_t *lpt = buffer;
+	uint16_t *lpt = buffer;   //16位数据
 	
 	if(block >= (STM32Flash_NUM_GRAN/2)) //error
 	{
@@ -128,10 +128,12 @@ int stm32flash_readLittlefs(const struct lfs_config *c, lfs_block_t block,
 	//获取读取的初始地址
 	addr2Read = STM32_FLASH_FLLESYS_START_BASE + block*STM32Flash_ERASE_GRAN + off;
 	
+
 	//数据读取
-	for(int i =0;i < size;i++,addr2Read++)
+	for(int i =0;i < (size/2);i++)
 	{
-		lpt[i] = *(uint8_t*)addr2Read; 
+		lpt[i] = STMFLASH_ReadHalfWord(addr2Read);
+		addr2Read += 2;
 	}
 	
 	
@@ -161,11 +163,17 @@ int stm32flash_writeLittlefs(const struct lfs_config *c, lfs_block_t block,
 		return LFS_ERR_IO;
 	}
 	
+	
+	
 	//写入的初始地址
 	addr2Read = STM32_FLASH_FLLESYS_START_BASE + block*STM32Flash_ERASE_GRAN + off;
 	
+	FLASH_Unlock();
 	
 	STMFLASH_Write_NoCheck(addr2Read,buffer,size/2);
+	
+	FLASH_Lock();//上锁
+	
 	return LFS_ERR_OK;
 				
 }
@@ -187,10 +195,16 @@ int stm32flash_eraseLittlefs(const struct lfs_config *c, lfs_block_t block)
 		return LFS_ERR_IO;
 	}
 	
+	printf("bk:%d\r\n",block);
+	
 	//擦除的扇区地址
 	addr2Read = STM32_FLASH_FLLESYS_START_BASE + block*STM32Flash_ERASE_GRAN;
 	
+	FLASH_Unlock();
+	
 	FLASH_ErasePage(addr2Read);
+	
+	FLASH_Lock();//上锁
 	
 	return  LFS_ERR_OK;
 

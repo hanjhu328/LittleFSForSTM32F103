@@ -59,6 +59,9 @@ const struct lfs_config cfg_Stm32Flash = {
 
 
 
+extern void STMFLASH_Write_NoCheck(u32 WriteAddr,u16 *pBuffer,u16 NumToWrite);  
+
+
 int main(void)
 {
 	int err = -1;
@@ -85,6 +88,10 @@ int main(void)
 		LED0=!LED0;//DS0иак╦
 	}
 	printf("W25Q128 Ready!\r\n");  
+	
+	
+	
+	
 
 //    err =  lfs_mount(&lfs, &cfg);
 //	
@@ -102,6 +109,8 @@ int main(void)
 		lfs_format(&lfs_Stm32Flash, &cfg_Stm32Flash);
 		lfs_mount(&lfs_Stm32Flash, &cfg_Stm32Flash);
 	}
+	
+	
 	
 	
 	
